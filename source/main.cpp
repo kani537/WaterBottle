@@ -11,7 +11,7 @@
 class Ball
 {
 public:
-  Ball(float px, float py, float direction = M_PI * 1.5, float speed = 0.1f, float gravity = 0.05f);
+  Ball(float px, float py, float direction = M_PI * 1.5, float speed = 0.1f, float gravity = 0.1f);
   void Draw(void);
   void Move(void);
 
@@ -21,62 +21,45 @@ private:
 
 Ball::Ball(float px, float py, float direction, float speed, float gravity)
 {
-  this->_px = px;
-  this->_py = py;
-  this->_direction = direction;
-  this->_speed = speed;
-  this->_gravity = gravity;
+  _px = px;
+  _py = py;
+  _direction = direction;
+  _speed = speed;
+  _gravity = gravity;
 }
 
 void Ball::Draw(void)
 {
   u32 clrWater = C2D_Color32(0x99, 0x99, 0xFF, 0xBB);
-  C2D_DrawCircleSolid(this->_px, this->_py, 0, 1.0f, clrWater);
+  C2D_DrawCircleSolid(_px, _py, 0, 1.0f, clrWater);
 }
 
 void Ball::Move(void)
 {
-  if (_speed != 0)
-  {
-    if (_direction < M_PI)
-      _speed -= _gravity;
-    else
-      _speed += _gravity;
-  }
+  if (!_speed && _py == SCREEN_HEIGHT - 2)
+    return;
 
-  if (M_PI / 2 < _direction && _direction < M_PI * 1.5)
-    _direction += _gravity;
-  else if (_direction != M_PI / 2)
-  {
-    _direction -= _gravity;
-  }
 
-  _px += cos(_direction) * _speed;
-  _py -= sin(_direction) * _speed;
+  _direction = atan2(sin(_direction)*_speed, cos(_direction)*_speed - _gravity);
+  _speed = sqrt((sin(_direction) * _speed) * (sin(_direction) * _speed) + (cos(_direction) * _speed - _gravity) * (cos(_direction) * _speed - _gravity));
+  _px += sin(_direction) * _speed;
+  _py -= cos(_direction) * _speed;
   if (_px < 1)
   {
     _px = 1;
-    // direction = abs(M_PI - direction);
-    // speed = abs(speed - 0.5f);
   }
   if (SCREEN_WIDTH - 1 < _px)
   {
     _px = SCREEN_WIDTH - 1;
-    // direction = abs(M_PI - direction);
-    // speed = abs(speed - 0.5f);
   }
   if (_py < 1)
   {
     _py = 1;
-    // direction = direction < M_PI ? direction + M_PI : M_PI - direction;
-    // speed = abs(speed - 0.5f);
   }
   if (SCREEN_HEIGHT - 1 < _py)
   {
     _py = SCREEN_HEIGHT - 1;
-    _speed = _speed - 0.1f < 0 ? 0 : _speed - 0.1f;
-    // direction = abs(M_PI - direction);
-    // speed = abs(speed - 0.5f);
+    _speed = _speed - 0.1f < 0 ? 0 : _speed - 0.1;
   }
 }
 
@@ -110,13 +93,14 @@ int main(int argc, char **argv)
     if (kHeld & KEY_TOUCH)
     {
       hidTouchRead(&touch);
-      balls.push_back(Ball(touch.px, touch.py, M_PI, 5.0F));
-      // balls.push_back(Ball(touch.px, touch.py, rand() % 11 * M_PI / 6, 5.0F));
+      // balls.push_back(Ball(touch.px, touch.py, M_PI / 2, 5.0F));
+      // balls.push_back(Ball(touch.px, touch.py, (touch.py * 1.0 / SCREEN_HEIGHT * 1.0) * M_PI * 2, 5.0F));
+      for (size_t i = 0; i < 10; i++)
+        balls.push_back(Ball(touch.px, touch.py, rand() % int(M_PI * 2 * 100) * 0.01f, 5.0F));
     }
-    if(kDown & KEY_X)
+    if (kDown & KEY_X)
       balls.clear();
 
-    // Render the scene
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(bottom, clrClear);
     C2D_SceneBegin(bottom);
@@ -129,9 +113,6 @@ int main(int argc, char **argv)
       ball.Move();
       ball.Draw();
     }
-    // u32 clrWater = C2D_Color32(0x99, 0x99, 0xFF, 0x99);
-    // C2D_DrawCircleSolid(100, 100, 0, 1.0f, clrWater);
-    // Ball(100, 100).Draw();
 
     C3D_FrameEnd(0);
   }
